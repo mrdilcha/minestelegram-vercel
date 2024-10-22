@@ -1,6 +1,10 @@
 const { Telegraf, session } = require('telegraf'); // Import session from telegraf
 
+// Initialize the bot with the bot token from environment variables
 const bot = new Telegraf(process.env.BOT_TOKEN);
+
+// Log the Bot Token (for debugging purposes only)
+console.log('Bot Token:', process.env.BOT_TOKEN);
 
 // Use built-in session middleware
 bot.use(session());
@@ -116,6 +120,11 @@ bot.on('text', (ctx) => {
 
 // Handle webhook for Vercel deployment
 module.exports = async (req, res) => {
-    await bot.handleUpdate(req.body); // Handle incoming updates from Telegram
-    res.sendStatus(200); // Respond with 200 OK
+    try {
+        await bot.handleUpdate(req.body); // Handle incoming updates from Telegram
+        res.sendStatus(200); // Respond with 200 OK
+    } catch (error) {
+        console.error('Error handling update:', error);
+        res.sendStatus(500); // Respond with 500 Internal Server Error
+    }
 };
