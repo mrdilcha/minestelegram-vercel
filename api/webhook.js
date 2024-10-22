@@ -122,9 +122,9 @@ bot.on('text', (ctx) => {
 module.exports = async (req, res) => {
     try {
         await bot.handleUpdate(req.body); // Handle incoming updates from Telegram
-        res.sendStatus(200); // Respond with 200 OK
+        res.status(200).send(); // Respond with 200 OK using status and send method
     } catch (error) {
         console.error('Error handling update:', error);
-        res.sendStatus(500); // Respond with 500 Internal Server Error
+        res.status(500).send({ error: 'Internal Server Error' }); // Respond with error message for internal server error
     }
 };
