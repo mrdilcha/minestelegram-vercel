@@ -9,6 +9,9 @@ console.log('Bot Token:', process.env.BOT_TOKEN);
 // Use built-in session middleware
 bot.use(session());
 
+// Historical data placeholder for pattern recognition (can be expanded)
+let historicalData = [];
+
 // Function to generate guaranteed safe positions based on the number of mines
 function generateSafePositions(numMines) {
     console.log(`Generating safe positions for ${numMines} mines.`);
@@ -31,7 +34,7 @@ function getRandomUniqueNumbers(count, max) {
 }
 
 // Function to predict mine positions based on client ID seed and number of mines
-function predictMines(numMines) {
+function predictMines(clientIdSeed, numMines) {
     console.log(`Predicting mine positions for ${numMines} mines.`);
     const gridSize = 5;
     const minePositions = [];
@@ -67,7 +70,9 @@ function predictMines(numMines) {
         console.error(`Unable to place all ${numMines} mines after ${attempts} attempts.`);
     }
 
-    return { minePositions };
+    const safePositions = generateSafePositions(numMines);
+    
+    return { minePositions, safePositions };
 }
 
 // Start command handler
@@ -118,11 +123,8 @@ bot.on('text', (ctx) => {
 
         console.log(`Client ID received: ${clientIdSeed}`);
 
-        // Generate predictions based on the number of mines only
-        const { minePositions } = predictMines(ctx.session.numMines);
-        
-        // Generate safe positions for display
-        const safePositions = generateSafePositions(ctx.session.numMines);
+        // Generate predictions based on the client ID seed
+        const { minePositions, safePositions } = predictMines(clientIdSeed, ctx.session.numMines);
 
         // Create a 5x5 grid with guaranteed safe positions and mines
         const gridSize = 5;
