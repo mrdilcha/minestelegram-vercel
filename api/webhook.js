@@ -33,14 +33,12 @@ function getRandomUniqueNumbers(count, max) {
 function predictMines(clientIdSeed, numMines) {
     const gridSize = 5;
     const minePositions = [];
-
-    // Avoid corners (positions: 0, 4, 20, 24)
     const cornerPositions = [0, 4, 20, 24];
-    
+
     // Generate mine positions ensuring no adjacent mines and avoiding corners
     while (minePositions.length < numMines) {
         const pos = Math.floor(Math.random() * (gridSize * gridSize));
-        
+
         // Check if position is valid: not a corner and not already occupied
         if (!cornerPositions.includes(pos) && !minePositions.includes(pos)) {
             // Check for adjacent mines
@@ -48,11 +46,21 @@ function predictMines(clientIdSeed, numMines) {
                 pos - gridSize, pos + gridSize, // Top and Bottom
                 pos - 1, pos + 1               // Left and Right
             ];
-            const hasAdjacentMine = adjacentPositions.some(adj => minePositions.includes(adj));
-            
+
+            // Only check valid adjacent positions
+            const hasAdjacentMine = adjacentPositions.filter(adj => 
+                adj >= 0 && adj < (gridSize * gridSize) && minePositions.includes(adj)
+            ).length > 0;
+
             if (!hasAdjacentMine) {
                 minePositions.push(pos);
             }
+        }
+
+        // Prevent infinite loop: break after too many attempts
+        if (minePositions.length < numMines && minePositions.length > 100) {
+            console.error('Unable to place all mines within reasonable attempts.');
+            break; // Exit the loop if unable to place mines after many tries
         }
     }
 
