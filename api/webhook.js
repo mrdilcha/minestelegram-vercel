@@ -120,8 +120,11 @@ bot.on('text', (ctx) => {
 
         // Generate predictions based on the client ID seed
         const { minePositions } = predictMines(clientIdSeed, ctx.session.numMines);
+        
+        // Generate safe positions for display
+        const safePositions = generateSafePositions(ctx.session.numMines);
 
-        // Create a 5x5 grid with guaranteed safe positions
+        // Create a 5x5 grid with guaranteed safe positions and mines
         const gridSize = 5;
         let grid = Array.from({ length: gridSize }, () => Array(gridSize).fill('❌')); // Initialize with ❌
 
@@ -129,6 +132,14 @@ bot.on('text', (ctx) => {
             const row = Math.floor(pos / gridSize);
             const col = pos % gridSize;
             grid[row][col] = '💣'; // Place mines
+        });
+
+        safePositions.forEach(pos => {
+            const row = Math.floor(pos / gridSize);
+            const col = pos % gridSize;
+            if (grid[row][col] !== '💣') { // Avoid overwriting mines
+                grid[row][col] = '💎'; // Place safe spots
+            }
         });
 
         // Send the formatted grid to the user without historical predictions
@@ -151,9 +162,6 @@ module.exports = async (req, res) => {
     } catch (error) {
         console.error('Error handling update:', error);
         
-        // Log additional details about the request for debugging purposes.
-        console.error('Request body:', req.body);
-
         res.status(500).send({ error: 'Internal Server Error' }); // Respond with error message for internal server error
     }
 };
