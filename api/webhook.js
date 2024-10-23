@@ -9,9 +9,6 @@ console.log('Bot Token:', process.env.BOT_TOKEN);
 // Use built-in session middleware
 bot.use(session());
 
-// Historical data placeholder for pattern recognition (can be expanded)
-let historicalData = [];
-
 // Function to generate guaranteed safe positions based on the number of mines
 function generateSafePositions(numMines) {
     if (numMines < 4) {
@@ -34,11 +31,32 @@ function getRandomUniqueNumbers(count, max) {
 
 // Function to predict mine positions based on client ID seed and number of mines
 function predictMines(clientIdSeed, numMines) {
-    const minePositions = getRandomUniqueNumbers(numMines, 25);
-    const safePositions = generateSafePositions(numMines);
+    const gridSize = 5;
+    const minePositions = [];
 
-    // Store current prediction in historical data for future analysis
-    historicalData.push({ minePositions, safePositions });
+    // Avoid corners (positions: 0, 4, 20, 24)
+    const cornerPositions = [0, 4, 20, 24];
+    
+    // Generate mine positions ensuring no adjacent mines and avoiding corners
+    while (minePositions.length < numMines) {
+        const pos = Math.floor(Math.random() * (gridSize * gridSize));
+        
+        // Check if position is valid: not a corner and not already occupied
+        if (!cornerPositions.includes(pos) && !minePositions.includes(pos)) {
+            // Check for adjacent mines
+            const adjacentPositions = [
+                pos - gridSize, pos + gridSize, // Top and Bottom
+                pos - 1, pos + 1               // Left and Right
+            ];
+            const hasAdjacentMine = adjacentPositions.some(adj => minePositions.includes(adj));
+            
+            if (!hasAdjacentMine) {
+                minePositions.push(pos);
+            }
+        }
+    }
+
+    const safePositions = generateSafePositions(numMines);
 
     return { minePositions, safePositions };
 }
@@ -102,13 +120,9 @@ bot.on('text', (ctx) => {
             }
         });
 
-        // Send the formatted grid to the user
+        // Send the formatted grid to the user without historical predictions
         const response = grid.map(row => row.join('')).join('\n');
         
-        if (historicalData.length > 0) {
-            ctx.reply(`Historical Predictions: ${JSON.stringify(historicalData[historicalData.length - 1])}`);
-        }
-
         ctx.reply(`Predicted Pattern:\n${response}`);
 
         // Clear session data after processing
