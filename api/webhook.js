@@ -11,14 +11,11 @@ bot.use(session());
 
 // Function to generate guaranteed safe positions based on the number of mines
 function generateSafePositions(numMines) {
-    console.log(`Generating safe positions for ${numMines} mines.`);
-    if (numMines < 4) {
-        return getRandomUniqueNumbers(4, 25); // Give 4 guaranteed diamonds
-    } else if (numMines <= 6) {
-        return getRandomUniqueNumbers(3, 25); // Give 3 guaranteed diamonds
-    } else {
-        return getRandomUniqueNumbers(2, 25); // Give 2 guaranteed diamonds
+    const safePositions = new Set();
+    while (safePositions.size < Math.min(numMines, 4)) {
+        safePositions.add(Math.floor(Math.random() * 25));
     }
+    return Array.from(safePositions);
 }
 
 // Function to get unique random numbers
@@ -30,44 +27,40 @@ function getRandomUniqueNumbers(count, max) {
     return Array.from(numbers);
 }
 
-// Function to predict mine positions based on client ID seed and number of mines
+// Function to predict mine positions based on number of mines
 function predictMines(numMines) {
-    console.log(`Predicting mine positions for ${numMines} mines.`);
     const gridSize = 5;
-    const minePositions = [];
+    const minePositions = new Set();
     const cornerPositions = [0, 4, 20, 24];
 
     let attempts = 0; // Track attempts to avoid infinite loops
 
     // Generate mine positions ensuring no adjacent mines and avoiding corners
-    while (minePositions.length < numMines && attempts < 100) {
+    while (minePositions.size < numMines && attempts < 100) {
         const pos = Math.floor(Math.random() * (gridSize * gridSize));
 
         // Check if position is valid: not a corner and not already occupied
-        if (!cornerPositions.includes(pos) && !minePositions.includes(pos)) {
+        if (!cornerPositions.includes(pos) && !minePositions.has(pos)) {
             // Check for adjacent mines
             const adjacentPositions = [
                 pos - gridSize, pos + gridSize, // Top and Bottom
                 pos - 1, pos + 1               // Left and Right
             ];
 
-            // Only check valid adjacent positions
-            const hasAdjacentMine = adjacentPositions.filter(adj =>
-                adj >= 0 && adj < (gridSize * gridSize) && minePositions.includes(adj)
-            ).length > 0;
+            const hasAdjacentMine = adjacentPositions.some(adj => minePositions.has(adj));
 
             if (!hasAdjacentMine) {
-                minePositions.push(pos);
+                minePositions.add(pos);
             }
         }
         attempts++;
     }
 
-    if (minePositions.length < numMines) {
+    if (minePositions.size < numMines) {
         console.error(`Unable to place all ${numMines} mines after ${attempts} attempts.`);
     }
 
-    return { minePositions };
+    return Array.from(minePositions);
 }
 
 // Start command handler
@@ -119,7 +112,7 @@ bot.on('text', (ctx) => {
         console.log(`Client ID received: ${clientIdSeed}`);
 
         // Generate predictions based on the number of mines only
-        const { minePositions } = predictMines(ctx.session.numMines);
+        const minePositions = predictMines(ctx.session.numMines);
         
         // Generate safe positions for display
         const safePositions = generateSafePositions(ctx.session.numMines);
