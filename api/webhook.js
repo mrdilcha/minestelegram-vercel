@@ -56,9 +56,7 @@ function predictMines(clientIdSeed, numMines) {
         }
     }
 
-    const safePositions = generateSafePositions(numMines);
-
-    return { minePositions, safePositions };
+    return { minePositions };
 }
 
 // Start command handler
@@ -117,12 +115,6 @@ bot.on('text', (ctx) => {
             const col = pos % gridSize;
             grid[row][col] = '💣'; // Place mines
         });
-
-        // Ensure at least one mine is placed for valid requests
-        if (minePositions.length === 0 && ctx.session.numMines > 0) {
-            ctx.reply(`Error: Unable to place ${ctx.session.numMines} mines. Please try again.`);
-            return;
-        }
 
         // Send the formatted grid to the user without historical predictions
         const response = grid.map(row => row.join('')).join('\n');
