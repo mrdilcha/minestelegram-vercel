@@ -31,7 +31,7 @@ function getRandomUniqueNumbers(count, max) {
 }
 
 // Function to predict mine positions based on client ID seed and number of mines
-function predictMines(clientIdSeed, numMines) {
+function predictMines(numMines) {
     console.log(`Predicting mine positions for ${numMines} mines.`);
     const gridSize = 5;
     const minePositions = [];
@@ -118,8 +118,8 @@ bot.on('text', (ctx) => {
 
         console.log(`Client ID received: ${clientIdSeed}`);
 
-        // Generate predictions based on the client ID seed
-        const { minePositions } = predictMines(clientIdSeed, ctx.session.numMines);
+        // Generate predictions based on the number of mines only
+        const { minePositions } = predictMines(ctx.session.numMines);
         
         // Generate safe positions for display
         const safePositions = generateSafePositions(ctx.session.numMines);
