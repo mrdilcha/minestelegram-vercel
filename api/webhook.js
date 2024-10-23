@@ -11,6 +11,7 @@ bot.use(session());
 
 // Function to generate guaranteed safe positions based on the number of mines
 function generateSafePositions(numMines) {
+    console.log(`Generating safe positions for ${numMines} mines.`);
     if (numMines < 4) {
         return getRandomUniqueNumbers(4, 25); // Give 4 guaranteed diamonds
     } else if (numMines <= 6) {
@@ -31,12 +32,15 @@ function getRandomUniqueNumbers(count, max) {
 
 // Function to predict mine positions based on client ID seed and number of mines
 function predictMines(clientIdSeed, numMines) {
+    console.log(`Predicting mine positions for ${numMines} mines.`);
     const gridSize = 5;
     const minePositions = [];
     const cornerPositions = [0, 4, 20, 24];
 
+    let attempts = 0; // Track attempts to avoid infinite loops
+
     // Generate mine positions ensuring no adjacent mines and avoiding corners
-    while (minePositions.length < numMines) {
+    while (minePositions.length < numMines && attempts < 100) {
         const pos = Math.floor(Math.random() * (gridSize * gridSize));
 
         // Check if position is valid: not a corner and not already occupied
@@ -48,7 +52,7 @@ function predictMines(clientIdSeed, numMines) {
             ];
 
             // Only check valid adjacent positions
-            const hasAdjacentMine = adjacentPositions.filter(adj => 
+            const hasAdjacentMine = adjacentPositions.filter(adj =>
                 adj >= 0 && adj < (gridSize * gridSize) && minePositions.includes(adj)
             ).length > 0;
 
@@ -56,12 +60,11 @@ function predictMines(clientIdSeed, numMines) {
                 minePositions.push(pos);
             }
         }
+        attempts++;
+    }
 
-        // Prevent infinite loop: break after too many attempts
-        if (minePositions.length < numMines && minePositions.length > 100) {
-            console.error('Unable to place all mines within reasonable attempts.');
-            break; // Exit the loop if unable to place mines after many tries
-        }
+    if (minePositions.length < numMines) {
+        console.error(`Unable to place all ${numMines} mines after ${attempts} attempts.`);
     }
 
     return { minePositions };
@@ -101,6 +104,8 @@ bot.command('predict', (ctx) => {
 
 // Handle client ID input
 bot.on('text', (ctx) => {
+    console.log('Received text input from user.');
+
     // Check if numMines is defined in the session before accessing it
     if (ctx.session && ctx.session.numMines) {
         const clientIdSeed = ctx.message.text.trim();
@@ -110,6 +115,8 @@ bot.on('text', (ctx) => {
             ctx.reply('Invalid Stake client ID. It must be exactly 10 characters long.');
             return;
         }
+
+        console.log(`Client ID received: ${clientIdSeed}`);
 
         // Generate predictions based on the client ID seed
         const { minePositions } = predictMines(clientIdSeed, ctx.session.numMines);
@@ -143,6 +150,10 @@ module.exports = async (req, res) => {
         res.status(200).send(); // Respond with 200 OK using status and send method
     } catch (error) {
         console.error('Error handling update:', error);
+        
+        // Log additional details about the request for debugging purposes.
+        console.error('Request body:', req.body);
+
         res.status(500).send({ error: 'Internal Server Error' }); // Respond with error message for internal server error
     }
 };
