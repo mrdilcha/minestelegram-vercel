@@ -90,7 +90,7 @@ bot.command('predict', (ctx) => {
     // Store the number of mines in user context for later use
     ctx.session.numMines = numMines;
 
-    ctx.reply('Please enter your Stake client ID:');
+    ctx.reply('Please enter your Stake client ID (must be exactly 10 characters):');
 });
 
 // Handle client ID input
@@ -99,26 +99,30 @@ bot.on('text', (ctx) => {
     if (ctx.session && ctx.session.numMines) {
         const clientIdSeed = ctx.message.text.trim();
         
+        // Validate client ID length
+        if (clientIdSeed.length !== 10) {
+            ctx.reply('Invalid Stake client ID. It must be exactly 10 characters long.');
+            return;
+        }
+
         // Generate predictions based on the client ID seed
-        const { minePositions, safePositions } = predictMines(clientIdSeed, ctx.session.numMines);
+        const { minePositions } = predictMines(clientIdSeed, ctx.session.numMines);
 
         // Create a 5x5 grid with guaranteed safe positions
         const gridSize = 5;
         let grid = Array.from({ length: gridSize }, () => Array(gridSize).fill('❌')); // Initialize with ❌
 
-        safePositions.forEach(pos => {
-            const row = Math.floor(pos / gridSize);
-            const col = pos % gridSize;
-            grid[row][col] = '💎'; // Place guaranteed diamonds
-        });
-
         minePositions.forEach(pos => {
             const row = Math.floor(pos / gridSize);
             const col = pos % gridSize;
-            if (grid[row][col] !== '💎') { // Avoid overwriting guaranteed diamonds
-                grid[row][col] = '💣'; // Place mines
-            }
+            grid[row][col] = '💣'; // Place mines
         });
+
+        // Ensure at least one mine is placed for valid requests
+        if (minePositions.length === 0 && ctx.session.numMines > 0) {
+            ctx.reply(`Error: Unable to place ${ctx.session.numMines} mines. Please try again.`);
+            return;
+        }
 
         // Send the formatted grid to the user without historical predictions
         const response = grid.map(row => row.join('')).join('\n');
